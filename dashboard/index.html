@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HireWire — AI Scout Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">⚡</div>
+      <div class="logo-text">
+        <span class="logo-name">HireWire</span>
+        <span class="logo-sub">AI Scout</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-page="dashboard" onclick="navigate('dashboard',this)">
+        <span class="nav-icon">🏠</span><span class="nav-label">Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-page="logs" onclick="navigate('logs',this)">
+        <span class="nav-icon">📋</span><span class="nav-label">Live Logs</span>
+        <span class="nav-badge" id="log-badge"></span>
+      </a>
+      <a href="#" class="nav-item" data-page="projects" onclick="navigate('projects',this)">
+        <span class="nav-icon">🗃️</span><span class="nav-label">Projects DB</span>
+      </a>
+      <a href="#" class="nav-item" data-page="settings" onclick="navigate('settings',this)">
+        <span class="nav-icon">⚙️</span><span class="nav-label">Settings</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-status">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-label">Checking...</span>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 class="page-title" id="page-title">Dashboard</h1>
+        <span class="page-subtitle" id="page-subtitle">Overview &amp; Control Center</span>
+      </div>
+      <div class="topbar-right">
+        <div class="uptime-chip" id="uptime-chip">
+          <span class="uptime-icon">🕒</span>
+          <span id="uptime-val">00:00:00</span>
+        </div>
+        <button class="btn btn-danger" id="stop-btn" onclick="stopBot()" style="display:none">
+          <span class="btn-icon">⏹</span> Stop Bot
+        </button>
+        <button class="btn btn-success" id="start-btn" onclick="startBot()">
+          <span class="btn-icon">▶</span> Start Bot
+        </button>
+      </div>
+    </header>
+
+    <!-- ─── PAGE: Dashboard ─── -->
+    <section class="page active" id="page-dashboard">
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card" id="stat-status">
+          <div class="stat-icon">🤖</div>
+          <div class="stat-body">
+            <div class="stat-value" id="stat-status-val">Offline</div>
+            <div class="stat-label">Bot Status</div>
+          </div>
+          <div class="stat-glow"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📦</div>
+          <div class="stat-body">
+            <div class="stat-value" id="stat-total">—</div>
+            <div class="stat-label">Total Projects</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📅</div>
+          <div class="stat-body">
+            <div class="stat-value" id="stat-week">—</div>
+            <div class="stat-label">Last 7 Days</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🆕</div>
+          <div class="stat-body">
+            <div class="stat-value" id="stat-today">—</div>
+            <div class="stat-label">Today</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row: Platforms + Last Run -->
+      <div class="dashboard-row">
+
+        <!-- Platforms Panel -->
+        <div class="panel" style="flex:1.2">
+          <div class="panel-header">
+            <span class="panel-icon">🌐</span>
+            <h2 class="panel-title">Platforms</h2>
+          </div>
+          <div class="platforms-list">
+            <div class="platform-item">
+              <div class="platform-left">
+                <img src="https://mostaql.com/favicon.ico" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><text y=%2220%22 font-size=%2218%22>🌐</text></svg>'" class="platform-logo" />
+                <div>
+                  <div class="platform-name">Mostaql</div>
+                  <div class="platform-url">mostaql.com</div>
+                </div>
+              </div>
+              <div class="platform-badge active">Active</div>
+            </div>
+            <div class="platform-item">
+              <div class="platform-left">
+                <div class="platform-emoji">🔷</div>
+                <div>
+                  <div class="platform-name">Nafezly</div>
+                  <div class="platform-url">nafezly.com</div>
+                </div>
+              </div>
+              <div class="platform-badge active">Active</div>
+            </div>
+            <div class="platform-item">
+              <div class="platform-left">
+                <div class="platform-emoji">🟠</div>
+                <div>
+                  <div class="platform-name">PeoplePerHour</div>
+                  <div class="platform-url">peopleperhour.com</div>
+                </div>
+              </div>
+              <div class="platform-badge active">Active</div>
+            </div>
+            <div class="platform-item">
+              <div class="platform-left">
+                <div class="platform-emoji">🟢</div>
+                <div>
+                  <div class="platform-name">Guru</div>
+                  <div class="platform-url">guru.com</div>
+                </div>
+              </div>
+              <div class="platform-badge active">Active</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bot Info Panel -->
+        <div class="panel" style="flex:1">
+          <div class="panel-header">
+            <span class="panel-icon">⚡</span>
+            <h2 class="panel-title">Bot Info</h2>
+          </div>
+          <div class="info-list">
+            <div class="info-row">
+              <span class="info-key">Last Run</span>
+              <span class="info-val" id="info-last-run">Never</span>
+            </div>
+            <div class="info-row">
+              <span class="info-key">Process PID</span>
+              <span class="info-val" id="info-pid">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-key">Interval</span>
+              <span class="info-val" id="info-interval">5 min</span>
+            </div>
+            <div class="info-row">
+              <span class="info-key">AI Model</span>
+              <span class="info-val" id="info-model">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-key">Min Hiring Rate</span>
+              <span class="info-val" id="info-hiring">—</span>
+            </div>
+          </div>
+
+          <!-- Credentials status -->
+          <div class="creds-status">
+            <div class="creds-title">Credentials</div>
+            <div class="cred-row">
+              <span>Gemini API Key</span>
+              <span class="cred-badge" id="cred-gemini">—</span>
+            </div>
+            <div class="cred-row">
+              <span>Telegram Token</span>
+              <span class="cred-badge" id="cred-telegram">—</span>
+            </div>
+            <div class="cred-row">
+              <span>Chat ID</span>
+              <span class="cred-badge" id="cred-chat">—</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Log Preview -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-icon">📋</span>
+          <h2 class="panel-title">Recent Activity</h2>
+          <button class="panel-btn" onclick="navigate('logs', document.querySelector('[data-page=logs]'))">View All →</button>
+        </div>
+        <div class="log-preview" id="log-preview">
+          <div class="log-empty">No activity yet. Start the bot to see logs.</div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ─── PAGE: Logs ─── -->
+    <section class="page" id="page-logs">
+      <div class="panel" style="height: calc(100vh - 160px); display:flex; flex-direction:column">
+        <div class="panel-header">
+          <span class="panel-icon">📡</span>
+          <h2 class="panel-title">Live Log Stream</h2>
+          <div class="log-controls">
+            <label class="toggle-wrap">
+              <input type="checkbox" id="log-autoscroll" checked />
+              <span class="toggle-slider"></span>
+              Auto-scroll
+            </label>
+            <button class="panel-btn" onclick="clearLogDisplay()">Clear</button>
+          </div>
+        </div>
+        <div class="log-terminal" id="log-terminal">
+          <div class="log-empty">Waiting for log stream...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── PAGE: Projects DB ─── -->
+    <section class="page" id="page-projects">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-icon">🗃️</span>
+          <h2 class="panel-title">Processed Projects</h2>
+          <button class="panel-btn danger" onclick="clearDB()">🗑 Clear DB</button>
+        </div>
+        <div class="table-wrap">
+          <table class="projects-table" id="projects-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Title</th>
+                <th>Platform</th>
+                <th>Hiring Rate</th>
+                <th>Processed At</th>
+                <th>Link</th>
+              </tr>
+            </thead>
+            <tbody id="projects-tbody">
+              <tr><td colspan="6" class="table-empty">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── PAGE: Settings ─── -->
+    <section class="page" id="page-settings">
+      <div class="settings-grid">
+
+        <!-- Credentials Card -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-icon">🔑</span>
+            <h2 class="panel-title">API Credentials</h2>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gemini API Key</label>
+            <input type="password" class="form-input" id="inp-gemini" placeholder="AIzaSy..." autocomplete="off" />
+            <div class="form-hint">احصل عليه مجانًا من <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent2)">Google AI Studio</a> بالضغط على Create API key.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Telegram Bot Token</label>
+            <input type="password" class="form-input" id="inp-telegram" placeholder="123456789:ABC..." autocomplete="off" />
+            <div class="form-hint">ابحث عن <a href="https://t.me/BotFather" target="_blank" style="color:var(--accent2)">@BotFather</a> في تليجرام، أرسل له امر <code>/newbot</code> واتبع الخطوات.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Telegram Chat ID</label>
+            <input type="text" class="form-input" id="inp-chatid" placeholder="987654321" />
+            <div class="form-hint">ابحث عن <a href="https://t.me/userinfobot" target="_blank" style="color:var(--accent2)">@userinfobot</a> في تليجرام وأرسل له أي رسالة سيقوم بالرد بـ ID الخاص بك.</div>
+          </div>
+          <button class="btn btn-primary" onclick="saveCredentials()">💾 Save Credentials</button>
+          <div class="form-hint">⚠️ Credentials are stored locally in your .env file only.</div>
+        </div>
+
+        <!-- Bot Settings Card -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-icon">🤖</span>
+            <h2 class="panel-title">Bot Settings</h2>
+          </div>
+          <div class="form-group">
+            <label class="form-label">AI Criteria (what to look for)</label>
+            <textarea class="form-input form-textarea" id="inp-criteria" rows="3"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Scan Interval (minutes)</label>
+              <input type="number" class="form-input" id="inp-interval" min="1" max="60" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Min Hiring Rate (%)</label>
+              <input type="number" class="form-input" id="inp-hiring" min="0" max="100" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">New Client Grace (days)</label>
+              <input type="number" class="form-input" id="inp-grace" min="1" max="30" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Max Projects / Run</label>
+              <input type="number" class="form-input" id="inp-maxprojects" min="5" max="100" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gemini Model</label>
+            <select class="form-input" id="inp-model">
+              <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+              <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+              <option value="gemini-3.1-flash-lite-preview">gemini-3.1-flash-lite-preview</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+          <div class="form-hint">ℹ️ Restart the bot after saving settings.</div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
