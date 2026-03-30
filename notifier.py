@@ -249,7 +249,14 @@ def send_alert(message: str) -> bool:
 def send_startup_ping() -> bool:
     """Send a startup confirmation message to verify connectivity."""
     return _send_message(
-        "🟢 <b>Mostaql AI Agent Started</b>\n"
-        "<i>Monitoring: Mostaql + Nafezly + PeoplePerHour</i>",
+        "⚡ <b>HireWire Online</b>\n"
+        "━━━━━━━━━━━━━━━━━\n"
+        "🌐 <i>Scanning 4 Platforms:</i>\n"
+        "   Mostaql • Nafezly\n"
+        "   PeoplePerHour • Guru\n"
+        "━━━━━━━━━━━━━━━━━\n"
+        "🧠 AI: Gemini 2.5 Flash\n"
+        "⏰ Cycle: Every 5 min\n"
+        "🔋 Status: <b>Active</b>",
         parse_mode="HTML",
     )
