@@ -102,9 +102,15 @@ If you want to tweak how the bot behaves, open `config.py` and modify the consta
 
 ### Local Testing
 
-To run the bot locally in your terminal, simply execute:
+To run the bot locally in your terminal, make sure your virtual environment is active, then execute:
 
 ```bash
+# On Windows
+.\venv\Scripts\activate
+python main.py
+
+# On Linux / macOS
+source venv/bin/activate
 python main.py
 ```
 You should see colorful logging output and eventually receive a "Startup Ping" message on your Telegram to confirm connectivity.
