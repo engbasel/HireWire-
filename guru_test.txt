@@ -1,0 +1,7 @@
+Title: Senior Full Stack Engineer Web3/Trading
+Budget: 
+Client: Alex K
+Hiring_Rate: 0
+Time: 
+Proposals: 
+Skills: ['API', 'Backend Operations', 'Mobile App Design', 'Rust Programming']

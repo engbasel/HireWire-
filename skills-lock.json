@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "python-executor": {
+      "source": "inferen-sh/skills",
+      "sourceType": "github",
+      "computedHash": "217d4b526d1a9f7baca36da191b6d4015944b2d1ec8f2b2798a0eaa8a18a6c2e"
+    }
+  }
+}

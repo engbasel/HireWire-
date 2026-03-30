@@ -1,0 +1,5 @@
+playwright>=1.50.0
+google-genai>=1.51.0
+schedule>=1.2.2
+python-dotenv>=1.1.0
+requests>=2.32.0
