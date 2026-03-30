@@ -15,6 +15,8 @@ class ClientInfo:
     total_projects: int = 0       # How many projects the client has posted
     country: str = ""
     verification_status: str = ""  # e.g., "verified", "unverified"
+    join_date: str = ""           # Registration date text (e.g. "11 أكتوبر 2023")
+    is_new_client: bool = False   # True if joined within NEW_CLIENT_DAYS
 
 
 @dataclass
@@ -38,6 +40,7 @@ class ScrapingResult:
     already_seen: int = 0
     new_found: int = 0
     serious_clients: int = 0      # Passed hiring rate filter
+    new_clients_kept: int = 0     # Kept due to being newly registered
     filtered_out: int = 0         # Failed hiring rate filter
     scraped_at: datetime = field(default_factory=datetime.now)
     projects: list[Project] = field(default_factory=list)
@@ -49,5 +52,6 @@ class ScrapingResult:
             f"   Already seen: {self.already_seen}\n"
             f"   New found: {self.new_found}\n"
             f"   Serious clients (hiring > 0%): {self.serious_clients}\n"
-            f"   Filtered out (0% hiring): {self.filtered_out}"
+            f"   New clients kept (joined recently): {self.new_clients_kept}\n"
+            f"   Filtered out: {self.filtered_out}"
         )

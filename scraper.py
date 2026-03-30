@@ -4,11 +4,13 @@ HireWire — Multi-Platform Playwright Scraper
 Stage 1: Scrape the listing page → extract project titles + URLs
 Stage 2: Visit EACH project URL → extract client hiring rate, budget, description
 Filter:  Discard clients with hiring rate below MIN_HIRING_RATE
+         UNLESS the client is brand-new (joined within NEW_CLIENT_DAYS)
 """
 
 import time
 import random
 import re
+from datetime import datetime, timedelta
 from playwright.sync_api import sync_playwright, Page, Browser
 
 from config import (
@@ -18,6 +20,7 @@ from config import (
     SCRAPER_MAX_DELAY,
     MAX_PROJECTS_PER_RUN,
     MIN_HIRING_RATE,
+    NEW_CLIENT_DAYS,
 )
 from models import Project, ClientInfo, ScrapingResult
 
@@ -31,6 +34,89 @@ def _human_delay(min_s: float = SCRAPER_MIN_DELAY, max_s: float = SCRAPER_MAX_DE
 
 
 # ---------------------------------------------------------------------------
+# Force-refresh navigation — bypass browser cache on every visit
+# ---------------------------------------------------------------------------
+def _navigate_fresh(page: Page, url: str, **kwargs) -> None:
+    """
+    Navigate to a URL with cache-busting so every cycle sees fresh content.
+    Clears the browser cache before navigating.
+    """
+    try:
+        # Playwright CDP: clear browser cache before navigation
+        client = page.context.new_cdp_session(page)
+        client.send("Network.clearBrowserCache")
+        client.detach()
+    except Exception:
+        pass  # Non-critical; some browsers may not support CDP
+
+    # Add cache-busting query param (timestamp) for extra safety
+    separator = "&" if "?" in url else "?"
+    busted_url = f"{url}{separator}_t={int(time.time())}"
+
+    defaults = {"timeout": SCRAPER_TIMEOUT_MS, "wait_until": "domcontentloaded"}
+    defaults.update(kwargs)
+    page.goto(busted_url, **defaults)
+
+
+# ---------------------------------------------------------------------------
+# Arabic date parsing — convert Mostaql "تاريخ التسجيل" to a datetime
+# ---------------------------------------------------------------------------
+_ARABIC_MONTHS: dict[str, int] = {
+    "يناير": 1, "فبراير": 2, "مارس": 3, "أبريل": 4,
+    "مايو": 5, "يونيو": 6, "يوليو": 7, "أغسطس": 8,
+    "سبتمبر": 9, "أكتوبر": 10, "نوفمبر": 11, "ديسمبر": 12,
+    # English fallbacks
+    "january": 1, "february": 2, "march": 3, "april": 4,
+    "may": 5, "june": 6, "july": 7, "august": 8,
+    "september": 9, "october": 10, "november": 11, "december": 12,
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4,
+    "jun": 6, "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+}
+
+
+def _parse_arabic_date(text: str) -> datetime | None:
+    """
+    Parse an Arabic date like '25 مارس 2026' or '11 أكتوبر 2023' into a datetime.
+    Returns None on failure.
+    """
+    if not text:
+        return None
+
+    # Pattern: day month_name year
+    match = re.search(r"(\d{1,2})\s+(\S+)\s+(\d{4})", text.strip())
+    if not match:
+        return None
+
+    day = int(match.group(1))
+    month_name = match.group(2).lower().strip()
+    year = int(match.group(3))
+
+    month = _ARABIC_MONTHS.get(month_name)
+    if month is None:
+        # Try partial match
+        for name, num in _ARABIC_MONTHS.items():
+            if name in month_name or month_name in name:
+                month = num
+                break
+
+    if month is None:
+        return None
+
+    try:
+        return datetime(year, month, day)
+    except (ValueError, OverflowError):
+        return None
+
+
+def _is_new_client(join_date_text: str, grace_days: int = NEW_CLIENT_DAYS) -> bool:
+    """Return True if the client joined within the last `grace_days` days."""
+    dt = _parse_arabic_date(join_date_text)
+    if dt is None:
+        return False
+    return (datetime.now() - dt) <= timedelta(days=grace_days)
+
+
+# ---------------------------------------------------------------------------
 # Stage 1: List Scraper — Extract project links from listing page
 # ---------------------------------------------------------------------------
 def _scrape_listing_page(page: Page, url: str) -> list[dict]:
@@ -41,7 +127,7 @@ def _scrape_listing_page(page: Page, url: str) -> list[dict]:
     projects_raw: list[dict] = []
 
     logger.info("[Scraper] Stage 1 — Navigating to listing: %s", url)
-    page.goto(url, timeout=SCRAPER_TIMEOUT_MS, wait_until="domcontentloaded")
+    _navigate_fresh(page, url)
     _human_delay()
 
     # Wait for project cards to appear
@@ -119,7 +205,7 @@ def _scrape_project_page(page: Page, url: str, title: str) -> Project:
     logger.debug("[Scraper] Stage 2 — Visiting project: %s", url)
 
     try:
-        page.goto(url, timeout=SCRAPER_TIMEOUT_MS, wait_until="domcontentloaded")
+        _navigate_fresh(page, url)
         _human_delay(1.5, 3.5)
     except Exception as exc:
         logger.warning("[Scraper] Failed to load project page %s: %s", url, exc)
@@ -244,8 +330,37 @@ def _scrape_project_page(page: Page, url: str, title: str) -> Project:
         except Exception as e:
             logger.debug("  → Strategy 3 (owner section) failed: %s", e)
 
+    # =========================================================================
+    # STRATEGY 4: Extract Join Date (تاريخ التسجيل)
+    # =========================================================================
+    try:
+        join_labels = page.locator("text=تاريخ التسجيل").all()
+        if join_labels:
+            join_label = join_labels[0]
+            # Search parent container
+            parent_text = join_label.locator("..").inner_text().strip()
+            
+            # Remove the label to leave just the date string
+            date_text = parent_text.replace("تاريخ", "").replace("التسجيل", "").strip()
+            if date_text:
+                client.join_date = date_text
+            else:
+                # Sibling fallback
+                try:
+                    sibling_text = join_label.evaluate("el => el.nextElementSibling ? el.nextElementSibling.innerText : ''")
+                    if sibling_text:
+                        client.join_date = sibling_text.strip()
+                except Exception:
+                    pass
+            
+            if client.join_date:
+                client.is_new_client = _is_new_client(client.join_date)
+    except Exception as e:
+        logger.debug("  → Strategy 4 (join date) failed: %s", e)
+
     if client.hiring_rate == 0:
-        logger.debug("  → ⚠️ Could not extract hiring rate for: %s", url)
+        if not client.is_new_client:
+            logger.debug("  → ⚠️ Hiring rate 0%% and NOT a new client (joined %s): %s", client.join_date or "unknown", url)
 
     # --- Extract Client Name ---
     # From the screenshot: the name appears under "صاحب المشروع" header
@@ -386,8 +501,12 @@ def _scrape_project_page(page: Page, url: str, title: str) -> Project:
     )
 
     logger.info(
-        "    ↳ 👤 Owner: %-15s | 💼 Hiring: %3d%% | 💰 Budget: %s",
-        (client.name or "Unknown")[:15], client.hiring_rate, budget or "N/A",
+        "    ↳ 👤 Owner: %-15s | 💼 Hiring: %3d%% | 📅 Joined: %s | 🆕 New: %s | 💰 Budget: %s",
+        (client.name or "Unknown")[:15],
+        client.hiring_rate,
+        client.join_date or "Unknown",
+        "Yes" if client.is_new_client else "No",
+        budget or "N/A",
     )
 
     return project
@@ -399,9 +518,11 @@ def _scrape_project_page(page: Page, url: str, title: str) -> Project:
 def scrape_mostaql(url: str) -> ScrapingResult:
     """
     Full two-stage scraping pipeline:
-    1. Scrape listing page for project URLs
-    2. Visit each project page to extract client hiring rate
-    3. Filter out unserious clients (hiring rate < MIN_HIRING_RATE)
+    1. Scrape listing page for project URLs (force-refresh)
+    2. Visit each project page to extract client hiring rate + join date
+    3. Keep project if:
+       a) hiring rate >= MIN_HIRING_RATE, OR
+       b) client joined within NEW_CLIENT_DAYS (brand-new, potentially serious)
     """
     result = ScrapingResult()
 
@@ -438,13 +559,28 @@ def scrape_mostaql(url: str) -> ScrapingResult:
 
                 project = _scrape_project_page(page, raw["url"], raw["title"])
 
-                if project.client.hiring_rate >= MIN_HIRING_RATE:
+                # --- Smart filter: hiring rate OR new client ---
+                hiring_ok = project.client.hiring_rate >= MIN_HIRING_RATE
+                is_new = project.client.is_new_client
+
+                if hiring_ok:
                     serious_projects.append(project)
                     result.serious_clients += 1
-                    logger.info("    ↳ ✅ Kept: Hiring rate >= %d%%", MIN_HIRING_RATE)
+                    logger.info("    ↳ ✅ Kept: Hiring rate %d%% >= %d%%", project.client.hiring_rate, MIN_HIRING_RATE)
+                elif is_new:
+                    serious_projects.append(project)
+                    result.new_clients_kept += 1
+                    logger.info(
+                        "    ↳ 🆕 Kept: NEW CLIENT (joined %s, within %d days) — hiring rate %d%% bypassed",
+                        project.client.join_date, NEW_CLIENT_DAYS, project.client.hiring_rate,
+                    )
                 else:
                     result.filtered_out += 1
-                    logger.info("    ↳ ❌ Filtered: Rate %d%% < %d%%", project.client.hiring_rate, MIN_HIRING_RATE)
+                    logger.info(
+                        "    ↳ ❌ Filtered: Rate %d%% < %d%% and client is NOT new (joined %s)",
+                        project.client.hiring_rate, MIN_HIRING_RATE,
+                        project.client.join_date or "unknown",
+                    )
 
                 # Human-like delay between project pages
                 if i < len(raw_projects):
@@ -455,7 +591,6 @@ def scrape_mostaql(url: str) -> ScrapingResult:
 
         except Exception as exc:
             logger.error("[Scraper] Critical error during scraping: %s", exc, exc_info=True)
-            # Save screenshot for debugging
             try:
                 page.screenshot(path="logs/scraper_error.png")
                 logger.info("[Scraper] Error screenshot saved to logs/scraper_error.png")
