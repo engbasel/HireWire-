@@ -15,6 +15,174 @@ An autonomous AI-powered bot that scouts high-quality programming and developmen
 
 ---
 
+## 🏗️ Architecture
+
+### High-Level System Flow
+
+```mermaid
+flowchart LR
+    subgraph Sources["🌐 Freelance Platforms"]
+        M["Mostaql"]
+        N["Nafezly"]
+        P["PeoplePerHour"]
+        G["Guru"]
+    end
+
+    subgraph Engine["⚡ HireWire Engine"]
+        S["Playwright Scraper\n(Headless Chromium)"]
+        F["Client Quality\nFilter"]
+        DB["SQLite\nDedup Memory"]
+        AI["Gemini 2.5 Flash\nAI Analyst"]
+    end
+
+    subgraph Delivery["📬 Delivery"]
+        T["Telegram Bot API"]
+        U["📱 Your Phone"]
+    end
+
+    M & N & P & G --> S
+    S --> F
+    F -->|"Serious\nClients Only"| DB
+    DB -->|"New Projects\nOnly"| AI
+    AI -->|"Formatted\nHTML Report"| T
+    T --> U
+
+    style Sources fill:#1a1a2e,stroke:#e94560,color:#fff
+    style Engine fill:#16213e,stroke:#0f3460,color:#fff
+    style Delivery fill:#0f3460,stroke:#53a8b6,color:#fff
+```
+
+### Data Pipeline Detail
+
+```mermaid
+flowchart TD
+    START(["⏰ Scheduler Trigger\n(Every 5 min)"]) --> SCRAPE
+
+    subgraph SCRAPE["Stage 1 — Discovery"]
+        S1["Navigate to listing page"]
+        S2["Extract project URLs + titles"]
+        S3["Collect unique links"]
+        S1 --> S2 --> S3
+    end
+
+    SCRAPE --> DETAIL
+
+    subgraph DETAIL["Stage 2 — Deep Extraction"]
+        D1["Visit each project URL"]
+        D2["Extract budget, deadline,\ndescription, skills"]
+        D3["Extract client profile:\nhiring rate, reviews,\ntotal spend"]
+        D1 --> D2 --> D3
+    end
+
+    DETAIL --> FILTER
+
+    subgraph FILTER["Stage 3 — Quality Gate"]
+        F1{"Client hiring\nrate > 0%?"}
+        F2{"Already in\nSQLite DB?"}
+        F1 -->|"Yes"| F2
+        F1 -->|"No — Skip"| DROP1(["🗑️ Discarded"])
+        F2 -->|"New"| PASS(["✅ Pass"])
+        F2 -->|"Seen"| DROP2(["🔁 Already Sent"])
+    end
+
+    FILTER --> AI_STEP
+
+    subgraph AI_STEP["Stage 4 — AI Analysis"]
+        A1["Batch new projects\ninto Gemini prompt"]
+        A2["Gemini evaluates relevance\nvs. your skillset"]
+        A3["Generate ranked HTML report\nwith scores + recommendations"]
+        A1 --> A2 --> A3
+    end
+
+    AI_STEP --> SEND
+
+    subgraph SEND["Stage 5 — Delivery"]
+        T1["Sanitize HTML for\nTelegram compatibility"]
+        T2["Chunk long reports\n(4096 char limit)"]
+        T3["Send via Telegram\nBot API"]
+        T1 --> T2 --> T3
+    end
+
+    SEND --> SAVE["💾 Save to SQLite"] --> SLEEP(["😴 Sleep until next cycle"])
+
+    style SCRAPE fill:#1b263b,stroke:#415a77,color:#fff
+    style DETAIL fill:#1b263b,stroke:#415a77,color:#fff
+    style FILTER fill:#2b2d42,stroke:#8d99ae,color:#fff
+    style AI_STEP fill:#003049,stroke:#669bbc,color:#fff
+    style SEND fill:#0f3460,stroke:#53a8b6,color:#fff
+```
+
+### Module Architecture
+
+```mermaid
+graph TB
+    MAIN["main.py\n━━━━━━━━━━━━━\nOrchestrator &\nScheduler Loop"]
+
+    CONFIG["config.py\n━━━━━━━━━━━━━\nEnv Vars • Logging\nConstants"]
+
+    MODELS["models.py\n━━━━━━━━━━━━━\nProject • ClientInfo\nDataclasses"]
+
+    SCRAPER["scraper.py\n━━━━━━━━━━━━━\n4 Platform Engines\nPlaywright Browser"]
+
+    DATABASE["database.py\n━━━━━━━━━━━━━\nSQLite CRUD\nDeduplication"]
+
+    AI["ai_agent.py\n━━━━━━━━━━━━━\nGemini Integration\nPrompt Engineering"]
+
+    NOTIFIER["notifier.py\n━━━━━━━━━━━━━\nTelegram API\nHTML Sanitizer"]
+
+    MAIN --> CONFIG
+    MAIN --> SCRAPER
+    MAIN --> DATABASE
+    MAIN --> AI
+    MAIN --> NOTIFIER
+
+    SCRAPER --> MODELS
+    SCRAPER --> CONFIG
+    AI --> MODELS
+    AI --> CONFIG
+    DATABASE --> CONFIG
+    NOTIFIER --> CONFIG
+
+    style MAIN fill:#e94560,stroke:#1a1a2e,color:#fff,stroke-width:2px
+    style CONFIG fill:#533483,stroke:#1a1a2e,color:#fff
+    style MODELS fill:#533483,stroke:#1a1a2e,color:#fff
+    style SCRAPER fill:#0f3460,stroke:#1a1a2e,color:#fff
+    style DATABASE fill:#0f3460,stroke:#1a1a2e,color:#fff
+    style AI fill:#0f3460,stroke:#1a1a2e,color:#fff
+    style NOTIFIER fill:#0f3460,stroke:#1a1a2e,color:#fff
+```
+
+### Project Structure
+
+```
+HireWire-/
+├── main.py            # 🎯 Entry point — orchestrator & scheduler
+├── config.py          # ⚙️ Environment config, logging, constants
+├── models.py          # 📦 Data models (Project, ClientInfo)
+├── scraper.py         # 🕷️ Multi-platform Playwright scraper engines
+├── ai_agent.py        # 🧠 Gemini AI analysis & report generation
+├── notifier.py        # 📬 Telegram delivery with HTML sanitization
+├── database.py        # 💾 SQLite deduplication memory layer
+├── requirements.txt   # 📋 Python dependencies
+├── .env.example       # 🔑 Template for API credentials
+├── .gitignore         # 🚫 Ignored files (venv, .env, db, logs)
+└── logs/              # 📜 Rotating log files & error screenshots
+```
+
+### Tech Stack
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Runtime** | Python 3.10+ | Core language |
+| **Browser Engine** | Playwright (Chromium) | JavaScript rendering & anti-bot bypass |
+| **AI** | Google Gemini 2.5 Flash | Project analysis & relevance scoring |
+| **Database** | SQLite | Lightweight deduplication memory |
+| **Notifications** | Telegram Bot API | Real-time alert delivery |
+| **Scheduling** | `schedule` library | Periodic execution (every 5 min) |
+| **Config** | `python-dotenv` | Secure environment variable loading |
+
+---
+
 ## 🛠️ Prerequisites
 
 Before you install, ensure you have the following installed on your machine or server:
