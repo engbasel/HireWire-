@@ -149,10 +149,30 @@ def job() -> None:
 # Entry Point
 # ---------------------------------------------------------------------------
 def main() -> None:
-    """Initialize everything and start the scheduler loop."""
-    print()
-    print(" ⚡ HireWire — Autonomous Freelance AI Scout Starting...")
-    print(" ━" * 30 + "\n")
+    # ── Big ASCII art banner ──
+    CYAN    = "\033[96m"
+    YELLOW  = "\033[93m"
+    MAGENTA = "\033[95m"
+    BOLD    = "\033[1m"
+    DIM     = "\033[2m"
+    RESET   = "\033[0m"
+
+    banner = f"""
+{CYAN}{BOLD}
+    ██╗  ██╗██╗██████╗ ███████╗██╗    ██╗██╗██████╗ ███████╗
+    ██║  ██║██║██╔══██╗██╔════╝██║    ██║██║██╔══██╗██╔════╝
+    ███████║██║██████╔╝█████╗  ██║ █╗ ██║██║██████╔╝█████╗  
+    ██╔══██║██║██╔══██╗██╔══╝  ██║███╗██║██║██╔══██╗██╔══╝  
+    ██║  ██║██║██║  ██║███████╗╚███╔███╔╝██║██║  ██║███████╗
+    ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝╚══════╝ ╚══╝╚══╝ ╚═╝╚═╝  ╚═╝╚══════╝
+{RESET}
+{YELLOW}    ⚡ Autonomous Freelance AI Scout{RESET}
+{DIM}    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}
+{MAGENTA}    🌐 Mostaql  •  Nafezly  •  PeoplePerHour  •  Guru{RESET}
+{DIM}    🧠 Powered by Google Gemini  •  📱 Delivered to Telegram{RESET}
+{DIM}    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}
+"""
+    print(banner)
 
     # Validate configuration
     if not validate_config():

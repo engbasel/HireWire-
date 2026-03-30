@@ -1,5 +1,18 @@
 # ⚡ HireWire — Autonomous Freelance AI Scout
 
+```
+    ██╗  ██╗██╗██████╗ ███████╗██╗    ██╗██╗██████╗ ███████╗
+    ██║  ██║██║██╔══██╗██╔════╝██║    ██║██║██╔══██╗██╔════╝
+    ███████║██║██████╔╝█████╗  ██║ █╗ ██║██║██████╔╝█████╗  
+    ██╔══██║██║██╔══██╗██╔══╝  ██║███╗██║██║██╔══██╗██╔══╝  
+    ██║  ██║██║██║  ██║███████╗╚███╔███╔╝██║██║  ██║███████╗
+    ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝╚══════╝ ╚══╝╚══╝ ╚═╝╚═╝  ╚═╝╚══════╝
+    
+    ⚡ Autonomous Freelance AI Scout
+    🌐 Mostaql  •  Nafezly  •  PeoplePerHour  •  Guru
+    🧠 Powered by Google Gemini  •  📱 Delivered to Telegram
+```
+
 > _Stay tapped into the hiring wire 24/7._
 
 An autonomous AI-powered bot that scouts high-quality programming and development projects across **4 major freelance platforms** (Mostaql, Nafezly, PeoplePerHour, Guru). It filters out unserious clients, uses **Google Gemini AI** to analyze project requirements against your specific criteria, and delivers highly relevant opportunities directly to your **Telegram** in real time.
